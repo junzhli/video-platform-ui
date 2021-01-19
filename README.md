@@ -1,7 +1,7 @@
 # Video Streaming - Vupload
 _Frontend service_  
 
-**See backend-service for more details**
+**See [backend-service](https://github.com/junzhli/video-platform-api) for more details**
 
 ## Getting Started
 First, run the development server:
