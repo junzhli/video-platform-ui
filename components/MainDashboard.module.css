@@ -1,0 +1,26 @@
+.is-fullheight {
+    min-height: 100%;
+    height: auto !important;
+    height: 100%;
+    margin: 0 auto -20px;
+}
+
+.table-fixed-layout {
+    table-layout: fixed;
+}
+
+@media screen and (max-width: 768px) {
+    .table-fixed-height {
+        min-height: 800px;
+        margin: 5px;
+    }
+}
+
+.table-fixed-height {
+    min-height: 530px;
+}
+
+.text-overflow-ellipsis {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

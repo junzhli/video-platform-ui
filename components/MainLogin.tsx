@@ -1,0 +1,157 @@
+import React from "react";
+import GoogleSignButton from "./GoogleSignButton";
+import { IMainLoginProps, IMainLoginStates } from "./types/MainLogin";
+import { setUserIsLoggedIn } from "../actions/user";
+import { withRouter } from "next/router";
+import Link from "next/link";
+import axios from "axios";
+// import { setLoginCookie } from "../utils/login";
+import styles from "./MainLogin.module.css";
+import {GlobalStateContext} from "../store";
+
+class MainLogin extends React.Component<IMainLoginProps, IMainLoginStates> {
+    static contextType = GlobalStateContext;
+
+    constructor(props: IMainLoginProps) {
+        super(props);
+        this.googleSignIn = this.googleSignIn.bind(this);
+        this.receiveMessage = this.receiveMessage.bind(this);
+        this.localSignIn = this.localSignIn.bind(this);
+        this.handleInputOnChange = this.handleInputOnChange.bind(this);
+        this.state = {
+            userName: "",
+            userPassword: "",
+            localSignInErrMessage: "",
+        };
+    }
+
+    async localSignIn(event: any) {
+        event.preventDefault();
+        try {
+            const response = await axios.post(process.env["NEXT_PUBLIC_BASE_URL"] + "/api/user/login/", {
+                "username": this.state.userName,
+                "password": this.state.userPassword,
+            });
+            if (response.status !== 200) {
+                throw new Error("unknown status");
+            }
+            const accessToken = response.data.issueToken;
+            // setLoginCookie(accessToken);
+            const {dispatch} = this.context;
+            dispatch(setUserIsLoggedIn(true));
+            // this.props.setUserIsLoggedIn(true);
+            await this.props.router.push("/");
+        } catch (error) {
+            console.log("signIn error");
+            console.log(error);
+            if (error.response && error.response.status) {
+                if (error.response.status === 401) {
+                    this.setState({ localSignInErrMessage: "Invalid credential" });
+                } else {
+                    this.setState({ localSignInErrMessage: "Unknown error. Please try again later." });
+                }
+            }
+        }
+    }
+
+    googleSignIn(event: any) {
+        window.open(process.env["NEXT_PUBLIC_BASE_URL"] + "/api/user/sign/google");
+        window.addEventListener("message", this.receiveMessage, false);
+    }
+
+    receiveMessage(event) {
+        if (!event && !event.origin && !event.data) {
+            return;
+        }
+        if (event.origin !== process.env["NEXT_PUBLIC_BASE_URL"]) {
+            return;
+        }
+
+        if (event.data.accessToken !== undefined) {
+            const accessToken = event.data.accessToken;
+            window.removeEventListener("message", this.receiveMessage, false);
+
+            // setLoginCookie(accessToken);
+            const {dispatch} = this.context;
+            dispatch(setUserIsLoggedIn(true));
+            // this.props.setUserIsLoggedIn(true);
+            this.props.router.push("/");
+        }
+    }
+
+    handleInputOnChange(input: "userName" | "userPassword") {
+        let func = (event) => {
+            switch (input) {
+                case "userName":
+                    this.setState({userName: event.target.value});
+                    break;
+                case "userPassword":
+                    this.setState({userPassword: event.target.value});
+                    break;
+            }
+        };
+        func = func.bind(this);
+        return func;
+    }
+
+    render() {
+        return (
+               <section className={`hero is-light ${styles["full-height"]}`}>
+                    <div className="level-item has-text-centered">
+                        <div className="login">
+                            <div className="container is-fluid">
+                                <div className="notification is-capitalized has-text-weight-medium">
+                                    Log in with:
+                                </div>
+                                <GoogleSignButton onClick={this.googleSignIn} />
+                            </div>
+                            <div className="divider">OR</div>
+                            <form onSubmit={this.localSignIn}>
+                                <div className="field">
+                                    <div className="control">
+                                        <input className="input is-medium is-rounded" value={this.state.userName} onChange={this.handleInputOnChange("userName")} type="text" minLength={1} maxLength={20} placeholder="Username" autoComplete="username" required={true} />
+                                    </div>
+                                </div>
+                                <div className="field">
+                                    <div className="control">
+                                        <input className="input is-medium is-rounded" value={this.state.userPassword} onChange={this.handleInputOnChange("userPassword")} type="password" placeholder="**********" autoComplete="current-password" required={true} />
+                                    </div>
+                                </div>
+                                {
+                                    this.state.localSignInErrMessage !== "" && <p className="help is-danger">{this.state.localSignInErrMessage}</p>
+                                }
+                                <br />
+                                <button className="button is-block is-fullwidth is-info is-medium is-rounded" type="submit">
+                                Login with Email
+                                </button>
+                            </form>
+                            <br/>
+                            <nav className="level">
+                                <div className="level-item has-text-centered">
+                                <Link href="/signup">
+                                    <div>
+                                        <a href="#">Create an Account</a>
+                                    </div>
+                                </Link>
+                                </div>
+                            </nav>
+                        </div>
+                    </div>
+                </section>
+        );
+    }
+}
+
+// const mapStateToProps = (state: StoreState, ownProps: IMainLogin.IInnerProps): IMainLogin.IStateFromProps => {
+//     return {
+//         userLoggedIn: state.userMisc.userLoggedIn,
+//     };
+// };
+//
+// const mapDispatchToProps = (dispatch: Dispatch<UserActionType>, ownProps: IMainLogin.IInnerProps): IMainLogin.IPropsFromDispatch => {
+//     return {
+//         setUserIsLoggedIn: (userLoggedIn: boolean) => dispatch(setUserIsLoggedIn(userLoggedIn)),
+//     };
+// };
+
+export default withRouter(MainLogin);
